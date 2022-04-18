@@ -9,12 +9,12 @@ The grammar of the regular expression compiler is as follows:
 ```
 E → T
 E → TE
-T → F
-T → FT
-T → F*
-T → F+
-T → F?
-T → F|T
+T → C
+T → C|T
+C → F
+C → F*
+C → F+
+C → F?
 F → .
 F → l
 F → \n
@@ -24,6 +24,7 @@ Where:
 
 E is a regular expression
 T is a term
+C is a closure
 F is a factor
 l is a literal
 n is a non-literal
