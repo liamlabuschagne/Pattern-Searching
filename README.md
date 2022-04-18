@@ -10,6 +10,7 @@ The grammar of the regular expression compiler is as follows:
 E → T
 E → TE
 T → F
+T → FT
 T → F*
 T → F+
 T → F?
@@ -34,6 +35,14 @@ n is a non-literal
 () can be used to raise precedence of an expression
 \ is an escape character
 ```
+
+### Precedence
+The order of precedence is as follows:
+1. escaped characters (i.e. symbols preceded by \)
+2. parentheses (i.e. the most deeply nested regexps have the highest precedence)
+3. repetition/option operators (i.e. *, + and ?)
+4. concatenation
+5. alternation (i.e. | and [ ]) 
 
 ### Pre-Processing
 The compiler will also convert the following syntax using a pre-processor:
