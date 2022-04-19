@@ -18,10 +18,10 @@ public class REsearch{
 			int[] n1;
 			int[] n2;
 			//creates a new deque
-			Deque deques = new Deque();
+			Deque deque = new Deque();
 			String[] words;
 			
-			words = s.split(",");
+			words = s.split("");
 			while(s!=null){
 				
 				
@@ -53,8 +53,9 @@ class Deque{
 		node.value = s;
 		node.next = head;
 		if(head == null)
-		  tail = node;  
-		head = node;
+		  tail = node;
+		else
+		  head = node;
 		
 		
 	}
