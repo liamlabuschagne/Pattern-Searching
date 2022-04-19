@@ -14,15 +14,13 @@ class REcompile {
 
     private static void expression() {
         term();
-        if (i == r.length()) {
-            return;
-        }
-        expression();
+        if (i != r.length() && (isLiteral(r.charAt(i)) || r.charAt(i) == '('))
+            expression();
     }
 
     private static void term() {
         closure();
-        if (i >= r.length())
+        if (i == r.length())
             return;
         if (r.charAt(i) == '|') {
             i++;
@@ -33,7 +31,7 @@ class REcompile {
 
     private static void closure() {
         factor();
-        if (i >= r.length())
+        if (i == r.length())
             return;
         if (r.charAt(i) == '*' || r.charAt(i) == '+' || r.charAt(i) == '?') {
             i++;
@@ -46,10 +44,8 @@ class REcompile {
         if (r.charAt(i) == '(') {
             i++;
             expression();
-            return;
-        }
-
-        if (r.charAt(i) == ')') {
+            if (i == r.length() || r.charAt(i) != ')')
+                error();
             i++;
             return;
         }
@@ -80,7 +76,19 @@ class REcompile {
     }
 
     private static void error() {
-        System.err.println("Malformed expression near position: " + i);
+        error("");
+    }
+
+    private static void error(String from) {
+        System.err.println("Malformed expression near position: " + i + from);
+
+        String padding = "";
+        for (int j = 0; j < i; j++) {
+            padding += " ";
+        }
+        System.out.println(r);
+        System.out.println(padding + "^");
+
         System.exit(0);
     }
 }
