@@ -7,31 +7,44 @@ class REcompile {
     private static int[] n1; // Next 1 of each state in FSM
     private static int[] n2; // Next 2 of each state in FSM
 
+    // debug mode toggle
+    private static boolean debugMode = false;
+
     public static void main(String args[]) {
-        if (args.length != 1) {
-            System.err.println("Usage: java REcompile.java \"[regular expression]\"");
+        if (args.length == 0 || args.length > 2) {
+            System.err.println("Usage: java REcompile.java \"[REGULAR EXPRESSION]\"\n-d\tDebug Mode");
+            return;
         }
+
+        if (args.length == 2) {
+            debugMode = true;
+        }
+
         r = args[0];
-        System.out.println("Compiling: " + r);
+
+        if (debugMode)
+            System.out.println("Compiling: " + r);
 
         // Initialize FSM arrays to be the length of the expression since we need one
         // state per symbol in the expression except for parenthesis but it is not worth
         // scanning through to see how many of them there are.
 
-        ch = new char[r.length() * 2];
-        n1 = new int[r.length() * 2];
-        n2 = new int[r.length() * 2];
+        ch = new char[r.length() * 3];
+        n1 = new int[r.length() * 3];
+        n2 = new int[r.length() * 3];
 
-        // Pad start with single direction branching machine
-        setState(s, (char) 1, s + 1, s + 1);
-        s++;
+        expression();
 
-        System.out.println("FSM starts at state: " + expression());
         showFSM();
     }
 
     private static int expression() {
-        int start = alternation();
+        // Every expression starts with a single direction branching machine
+        setState(s, (char) 1, s + 1, s + 1);
+        int start = s;
+        s++;
+
+        alternation();
 
         if (i < r.length() && (isFactor() || r.charAt(i) == '(' || r.charAt(i) == '\\'))
             expression();
@@ -41,8 +54,23 @@ class REcompile {
 
     private static int alternation() {
         int start = concatenation();
+        int prev = start - 1;
+        // Optionally do alternation with another alternation.
+        if (i < r.length() && r.charAt(i) == '|') {
+            i++;
+            setState(s, (char) 1, start, s + 1);
+            setState(prev, ch[prev], s, s);
+            start = s;
+            int endOfConcatenation = s - 1;
+            s++;
+            setState(s, (char) 1, s + 1, s + 1);
+            s++;
+            alternation();
+            setState(endOfConcatenation, ch[endOfConcatenation], s, s);
+            setState(s, (char) 1, s + 1, s + 1);
+            s++;
 
-        // Optionally do an alternation
+        }
 
         return start;
     }
@@ -64,7 +92,14 @@ class REcompile {
         // Optionally does a repetition
         if (i < r.length() && r.charAt(i) == '*') {
             i++;
-            setState(s, (char) 1, start, s + 1);
+
+            // Move start forward one, replacing it with a padding machine
+            setState(s, ch[start], s + 1, s + 1); // After literal, jump to branching machine again
+            int literal = s;
+            s++;
+            setState(start, (char) 1, s, s); // which points to the branching machine
+
+            setState(s, (char) 1, literal, s + 1);
             int b = s;
             s++;
             // Update prev machine to point to branching machine
@@ -83,30 +118,33 @@ class REcompile {
             s++;
         } else if (i < r.length() && r.charAt(i) == '?') {
             i++;
-            setState(s, (char) 1, start, s + 1);
+
+            // Move start forward one, replacing it with a padding machine
+            setState(s, ch[start], s + 2, s + 2); // After literal, jump to exit
+            int literal = s;
+            s++;
+            setState(start, (char) 1, s, s); // which points to the branching machine
+
+            setState(s, (char) 1, literal, s + 1);
             int b = s;
             s++;
             // Update prev machine to point to branching machine
             setState(prev, ch[prev], b, b);
 
-            // Update start to point to next machine
-            setState(start, ch[start], s, s);
-
             // Finish off with single direction branching machine
             setState(s, (char) 1, s + 1, s + 1);
             s++;
         }
-
         return start;
     }
 
     private static int parenthesis() {
         int start = -1;
-        if (r.charAt(i) != '(') {
-            start = escape();
-        }
 
-        // Optionally does a nested expression (E)
+        if (i < r.length())
+            start = escape();
+
+        // Or it does a nested expression (E)
         if (i < r.length() && r.charAt(i) == '(') {
             i++;
             start = expression();
@@ -120,6 +158,7 @@ class REcompile {
 
     private static int escape() {
         int start = -1;
+
         if (r.charAt(i) == '\\') {
             // Handle escaped non-literal
             i++; // Move past the \
@@ -132,20 +171,20 @@ class REcompile {
         } else if (isLiteral()) {
             start = factor();
         }
-
         return start;
     }
 
     private static int factor() {
         int start = -1;
+
         if (isLiteral() || r.charAt(i) == '.') {
             // Handle literal
             setState(s, r.charAt(i), s + 1, s + 1);
             start = s;
+
             s++;
             i++;
         }
-
         return start;
     }
 
@@ -190,29 +229,41 @@ class REcompile {
     }
 
     private static void showFSM() {
-        System.out.println("s#|ch|n1|n2|");
+        if (debugMode)
+            showFSMdebug();
+        else
+            for (int j = 0; j < s; j++) {
+                System.out.println(j + " " + ch[j] + " " + n1[j] + " " + n2[j] + " ");
+            }
+    }
+
+    private static void showFSMdebug() {
+        System.out.println(" ___________");
+        System.out.println("|s#|ch|n1|n2|");
         for (int j = 0; j < s; j++) {
-            String stateNumber = j + "";
-            if (j < 10) {
-                stateNumber += " ";
+
+            String stateNumber = j + " ";
+            if (j > 9) {
+                stateNumber = j + "";
             }
 
             String character = ch[j] + " ";
             if (ch[j] == (char) 1) {
-                character = "  ";
+                character += " ";
             }
 
-            String next1 = n1[j] + "";
-            if (next1.length() != 2) {
-                next1 += " ";
+            String nextOne = n1[j] + " ";
+            if (n1[j] > 9) {
+                nextOne = n1[j] + "";
             }
 
-            String next2 = n2[j] + "";
-            if (next2.length() != 2) {
-                next2 += " ";
+            String nextTwo = n2[j] + " ";
+            if (n2[j] > 9) {
+                nextTwo = n2[j] + "";
             }
 
-            System.out.println(stateNumber + "|" + character + "|" + next1 + "|" + next2 + "|");
+            System.out.println("|" + stateNumber + "|" + character + "|" + nextOne + "|" + nextTwo + "|");
         }
+        System.out.println(" -----------");
     }
 }
