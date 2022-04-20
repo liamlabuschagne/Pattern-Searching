@@ -14,16 +14,36 @@ public class REsearch{
 			String s=text.readLine();
 			
 			//3 arrays to simulate a FSM
-			char[] t;
-			int[] n1;
-			int[] n2;
+			//lecture test example
+			char[] t = {'_','a','b','_','a','a','_','a','b'};
+			int[] n1 = {0,3,6,2,6,6,5,8,0};
+			int[] n2 = {0,3,6,4,6,6,7,8,0};
+			
+			boolean[] visted = {true,false,false,false,false,false,false,false,false};
 			//creates a new deque
 			Deque deque = new Deque();
 			String[] words;
 			
 			words = s.split("");
-			while(s!=null){
-				
+			int mark=0;
+			int point=0;
+			for(int i = 1; i<=t.length;i++){
+			   while(visted[i] == false){
+			   
+			   	if(deque.curr == null)
+				  deque.push(i);
+				if(words[point] != String.valueOf(t[i])){
+			          deque.pop();
+			          mark++;
+			          point++;
+			          
+			        }
+			        else{
+			          deque.push(n1[i]);
+			          point++;
+			        }
+			   
+			   }
 				
 			}
 			
@@ -40,27 +60,27 @@ public class REsearch{
 
 class Deque{
 	public class Node{
-		String value;
+		int value;
 		
-		Node next;
+		Node link;
 	}
-	public Node head = null;
-	public Node tail = null;
+	public Node curr = null;
+	public Node next = null;
 	
 	public void push(String s){
 		Node node = new Node();
 		
 		node.value = s;
-		node.next = head;
-		if(head == null)
-		  tail = node;
+		node.link = curr;
+		if(curr != null)
+		  next = node; 
 		else
-		  head = node;
+	  	  curr = node;
 		
 		
 	}
 	public void pop(){
-		head = head.next;
-		head.prev = null;
+		curr = curr.link;
+		
 	}
 }
