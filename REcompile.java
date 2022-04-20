@@ -33,18 +33,18 @@ class REcompile {
         n1 = new int[r.length() * 3];
         n2 = new int[r.length() * 3];
 
+        setState(s, (char) 1, s + 1, s + 1);
+        s++;
+
         expression();
 
         showFSM();
     }
 
     private static int expression() {
-        // Every expression starts with a single direction branching machine
-        setState(s, (char) 1, s + 1, s + 1);
-        int start = s;
-        s++;
-
-        alternation();
+        int start = alternation();
+        if (i == 0)
+            start = 0;
 
         if (i < r.length() && (isFactor() || r.charAt(i) == '(' || r.charAt(i) == '\\'))
             expression();
@@ -53,22 +53,32 @@ class REcompile {
     }
 
     private static int alternation() {
+        int prev = s - 1;
         int start = concatenation();
-        int prev = start - 1;
+        int t1 = start;
         // Optionally do alternation with another alternation.
         if (i < r.length() && r.charAt(i) == '|') {
             i++;
-            setState(s, (char) 1, start, s + 1);
-            setState(prev, ch[prev], s, s);
-            start = s;
-            int endOfConcatenation = s - 1;
+
+            int endOfT1 = s - 1;
+
+            // Build bm (t1 and t2 which is next)
+            setState(s, (char) 1, t1, s + 1);
+            int bm = s;
+            start = bm; // This machine starts at branching machine
             s++;
-            setState(s, (char) 1, s + 1, s + 1);
-            s++;
+
+            // Set prev to bm
+            if (n1[prev] == n2[prev])
+                setState(prev, ch[prev], bm, bm);
+            else
+                setState(prev, ch[prev], n1[prev], bm);
+
+            // Build t2
             alternation();
-            setState(endOfConcatenation, ch[endOfConcatenation], s, s);
-            setState(s, (char) 1, s + 1, s + 1);
-            s++;
+
+            // Set end of t1 to next
+            setState(endOfT1, ch[endOfT1], s, s);
 
         }
 
@@ -86,32 +96,38 @@ class REcompile {
     }
 
     private static int repetition() {
+        int prev = s - 1;
         int start = parenthesis();
-        int prev = start - 1;
-
+        int t1 = start;
         // Optionally does a repetition
         if (i < r.length() && r.charAt(i) == '*') {
             i++;
 
-            // Move start forward one, replacing it with a padding machine
-            setState(s, ch[start], s + 1, s + 1); // After literal, jump to branching machine again
-            int literal = s;
+            // Build bm (t1 and next)
+            setState(s, (char) 1, t1, s + 1);
+            int bm = s;
+            start = bm;
+            System.out.println("Bm at " + bm + " " + t1 + " " + (s + 1));
             s++;
-            setState(start, (char) 1, s, s); // which points to the branching machine
 
-            setState(s, (char) 1, literal, s + 1);
-            int b = s;
-            s++;
-            // Update prev machine to point to branching machine
-            setState(prev, ch[prev], b, b);
+            // Set prev to bm
+            if (n1[prev] == n2[prev])
+                setState(prev, ch[prev], bm, bm);
+            else
+                setState(prev, ch[prev], n1[prev], bm);
 
-            // Finish off with single direction branching machine
+            // Pad end with sin dir bm
             setState(s, (char) 1, s + 1, s + 1);
             s++;
+
         } else if (i < r.length() && r.charAt(i) == '+') {
             i++;
-            setState(s, (char) 1, start, s + 1);
+
+            // Build bm to choose between t1 and next
+            setState(s, (char) 1, t1, s + 1);
             s++;
+
+            // Start is still t1 since this is 1 or more.
 
             // Finish off with single direction branching machine
             setState(s, (char) 1, s + 1, s + 1);
@@ -119,19 +135,22 @@ class REcompile {
         } else if (i < r.length() && r.charAt(i) == '?') {
             i++;
 
-            // Move start forward one, replacing it with a padding machine
-            setState(s, ch[start], s + 2, s + 2); // After literal, jump to exit
-            int literal = s;
+            // Build bm (t1 and next)
+            setState(s, (char) 1, t1, s + 1);
+            int bm = s;
+            start = bm;
             s++;
-            setState(start, (char) 1, s, s); // which points to the branching machine
 
-            setState(s, (char) 1, literal, s + 1);
-            int b = s;
-            s++;
-            // Update prev machine to point to branching machine
-            setState(prev, ch[prev], b, b);
+            // Set t1 to be next (only allow one visit)
+            setState(t1, ch[t1], s, s);
 
-            // Finish off with single direction branching machine
+            // Set prev to bm
+            if (n1[prev] == n2[prev])
+                setState(prev, ch[prev], bm, bm);
+            else
+                setState(prev, ch[prev], n1[prev], bm);
+
+            // Pad with sin dir bm
             setState(s, (char) 1, s + 1, s + 1);
             s++;
         }
@@ -177,14 +196,15 @@ class REcompile {
     private static int factor() {
         int start = -1;
 
-        if (isLiteral() || r.charAt(i) == '.') {
-            // Handle literal
-            setState(s, r.charAt(i), s + 1, s + 1);
-            start = s;
+        if (!isLiteral() && r.charAt(i) != '.')
+            error();
 
-            s++;
-            i++;
-        }
+        // Handle literal
+        setState(s, r.charAt(i), s + 1, s + 1);
+        start = s;
+
+        s++;
+        i++;
         return start;
     }
 
