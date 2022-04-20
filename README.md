@@ -7,28 +7,35 @@ This project aims to allow searching through text using a regular expression pat
 ### Grammar
 The grammar of the regular expression compiler is as follows:
 ```
-E → T
-E → TE
-T → C
-T → C|T
-C → F
-C → F*
-C → F+
-C → F?
+E → A
+E → AE
+A → C
+A → C|A
+C → R
+C → RC
+R → P
+R → P*
+R → P+
+R → P?
+P → X
+P → (X)
+X → F
+X → \n
 F → .
 F → l
-F → \n
-F → (E)
 
 Where:
 
 E is a regular expression
-T is a term
-C is a closure
-F is a factor
-l is a literal
+A is an alternation
+C is concatenation
+R is repetition
+P is parenthesis
+X is an escaped character
 n is a non-literal
+F is a factor
 . is any literal
+l is a literal
 * is 0 or more
 + is 1 or more
 ? is 0 or 1
@@ -43,7 +50,7 @@ The order of precedence is as follows:
 2. parentheses (i.e. the most deeply nested regexps have the highest precedence)
 3. repetition/option operators (i.e. *, + and ?)
 4. concatenation
-5. alternation (i.e. | and [ ]) 
+5. alternation (i.e. | and [ ])
 
 ### Pre-Processing
 The compiler will also convert the following syntax using a pre-processor:
