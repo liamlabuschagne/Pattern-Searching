@@ -41,6 +41,7 @@ n is a non-literal
 F is a factor
 . is a wildcard (matches any literal)
 l is a literal
+n is a non-literal
 * is 0 or more
 + is 1 or more
 ? is 0 or 1
@@ -60,7 +61,7 @@ The order of precedence is as follows:
 ### Pre-Processing
 The compiler will also convert the following syntax using a pre-processor:
 
-`[l+n+]` to `(l|l|\n|\n)` for however many literals and non-literals there are except in the case of `']'` which will be moved to the front and escaped: `[\]]`
+`[l*n*]` to `(l|l|\n|\n)` for however many literals and non-literals there are except in the case of `']'` which will be moved to the front and escaped: `(\]|l|l|\n|\n)`
 
 ### Output
 The compiler produces the description for a FSM representing the regular expression passed as an input parameter. The format of the output is that each state in the FSM is represented by one line with four space separated values in the order:
