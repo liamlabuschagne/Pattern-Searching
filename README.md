@@ -5,6 +5,7 @@ This project aims to allow searching through text using a regular expression pat
 
 ## Contributions
 The compiler was done by Liam Labuschagne ID: 1575313
+
 The search was done by Alex Knox ID: 
 
 ## Compiler
