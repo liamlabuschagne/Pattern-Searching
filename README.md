@@ -51,7 +51,7 @@ l is a literal
 
 ### Precedence
 The order of precedence is as follows:
-1. escaped characters (i.e. symbols preceded by \)
+1. escaped characters (i.e. symbols preceded by `\`)
 2. parentheses (i.e. the most deeply nested regexps have the highest precedence)
 3. repetition/option operators (i.e. *, + and ?)
 4. concatenation
