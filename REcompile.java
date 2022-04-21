@@ -6,6 +6,7 @@ class REcompile {
     private static char[] ch; // Character of each state in FSM
     private static int[] n1; // Next 1 of each state in FSM
     private static int[] n2; // Next 2 of each state in FSM
+    private static boolean inNestedExpression = false;
 
     // debug mode toggle
     private static boolean debugMode = false;
@@ -42,6 +43,8 @@ class REcompile {
     }
 
     private static int expression() {
+        if (i < r.length() && r.charAt(i) == ')')
+            error();
         int start = alternation();
         if (i == 0)
             start = 0;
@@ -91,6 +94,12 @@ class REcompile {
         // Optionally concatenates another concatenation
         if (i < r.length() && (isFactor() || r.charAt(i) == '(' || r.charAt(i) == '\\'))
             concatenation();
+        else if (i < r.length() && r.charAt(i) != ')' && r.charAt(i) != '|')
+            error();
+        else if ((i + 1) == r.length() && r.charAt(i) == '|')
+            error();
+        else if (i < r.length() && !inNestedExpression && r.charAt(i) == ')')
+            error();
 
         return start;
     }
@@ -107,7 +116,6 @@ class REcompile {
             setState(s, (char) 1, t1, s + 1);
             int bm = s;
             start = bm;
-            System.out.println("Bm at " + bm + " " + t1 + " " + (s + 1));
             s++;
 
             // Set prev to bm
@@ -166,9 +174,13 @@ class REcompile {
         // Or it does a nested expression (E)
         if (i < r.length() && r.charAt(i) == '(') {
             i++;
+            inNestedExpression = true;
+            if (i >= r.length() || r.charAt(i) == ')')
+                error(); // Empty expression
             start = expression();
             if (i >= r.length() || r.charAt(i) != ')')
                 error();
+            inNestedExpression = false;
             i++;
         }
 
@@ -189,6 +201,8 @@ class REcompile {
             i++;
         } else if (isLiteral()) {
             start = factor();
+        } else if (r.charAt(i) != '(') {
+            error();
         }
         return start;
     }
@@ -199,8 +213,14 @@ class REcompile {
         if (!isLiteral() && r.charAt(i) != '.')
             error();
 
+        char c = r.charAt(i);
+
+        if (r.charAt(i) == '.') {
+            c = (char) 2; // Ascii code 2 for wildcard
+        }
+
         // Handle literal
-        setState(s, r.charAt(i), s + 1, s + 1);
+        setState(s, c, s + 1, s + 1);
         start = s;
 
         s++;
@@ -253,12 +273,12 @@ class REcompile {
             showFSMdebug();
         else
             for (int j = 0; j < s; j++) {
-                System.out.println(j + " " + ch[j] + " " + n1[j] + " " + n2[j] + " ");
+                System.out.println(j + " " + ch[j] + " " + n1[j] + " " + n2[j]);
             }
     }
 
     private static void showFSMdebug() {
-        System.out.println(" ___________");
+        System.out.println(" -----------");
         System.out.println("|s#|ch|n1|n2|");
         for (int j = 0; j < s; j++) {
 
@@ -269,7 +289,10 @@ class REcompile {
 
             String character = ch[j] + " ";
             if (ch[j] == (char) 1) {
-                character += " ";
+                character = "br";
+            }
+            if (ch[j] == (char) 2) {
+                character = "wi";
             }
 
             String nextOne = n1[j] + " ";
