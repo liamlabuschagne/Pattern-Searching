@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 class REcompile {
 
     private static String r = ""; // The expression we are compiling
@@ -23,9 +25,6 @@ class REcompile {
 
         r = args[0];
 
-        if (debugMode)
-            System.out.println("Compiling: " + r);
-
         // Initialize FSM arrays to be the length of the expression since we need one
         // state per symbol in the expression except for parenthesis but it is not worth
         // scanning through to see how many of them there are.
@@ -34,12 +33,72 @@ class REcompile {
         n1 = new int[r.length() * 3];
         n2 = new int[r.length() * 3];
 
+        // Pad the start of the expression with a single direction branching machine
         setState(s, (char) 1, s + 1, s + 1);
         s++;
+
+        // Convert all [abc] to (a|b|c)
+        preProcess();
+
+        if (debugMode)
+            System.out.println("Compiling: " + r);
 
         expression();
 
         showFSM();
+    }
+
+    private static void preProcess() {
+        // Find non-escaped [
+
+        int start = 0;
+        int end = 0;
+        boolean inside = false;
+
+        for (int j = 0; j < r.length(); j++) {
+            if (r.charAt(j) == '[' && (j == 0 || (r.charAt(j - 1) != '\\'))) {
+                start = j;
+                inside = true;
+            }
+
+            if (inside && r.charAt(j) == ']' && r.charAt(j - 1) != '\\') {
+                end = j;
+                inside = false;
+                if (start + 1 == end)
+                    error();
+                String processed = alternationBracketsToExpression(r.substring(start + 1, end));
+                r = r.substring(0, start) + processed + r.substring(end + 1);
+            }
+        }
+    }
+
+    private static String alternationBracketsToExpression(String alternationString) {
+
+        String processed = "(";
+        boolean hasClosingSquareBracket = false;
+        for (int j = 0; j < alternationString.length(); j++) {
+
+            if (alternationString.charAt(j) == ']') {
+                // Flag this and move on
+                hasClosingSquareBracket = true;
+                continue;
+            } else if (!isLiteral(alternationString.charAt(j)) || alternationString.charAt(j) == '.') {
+                processed += "\\";
+            }
+            processed += alternationString.charAt(j);
+            if ((j + 1) < alternationString.length()) {
+                processed += "|";
+            }
+        }
+
+        if (hasClosingSquareBracket) {
+            // Prepend it
+            processed = processed.substring(0, 1) + "\\]|" + processed.substring(1);
+        }
+
+        processed += ")";
+
+        return processed;
     }
 
     private static int expression() {
