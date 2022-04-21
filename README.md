@@ -71,7 +71,7 @@ The compiler produces the description for a FSM representing the regular express
 4. Next state 2
 
 Special characters include the following invisible characters:
-1. Ascii code 1 represents a branching state
-2. Ascii code 2 represents a wild card (matches any symbol)
+1. ASCII code 1 represents a branching state
+2. ASCII code 2 represents a wild card (matches any symbol)
 
 ## Search
