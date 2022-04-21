@@ -3,6 +3,10 @@ This project aims to allow searching through text using a regular expression pat
 1. Compile the regular expression into a FSM description, output to standard out.
 2. Search an input file provided through a command line argument using the FSM description provided through standard in.
 
+## Contributions
+The compiler was done by Liam Labuschagne ID: 1575313
+The search was done by Alex Knox ID: 
+
 ## Compiler
 ### Grammar
 The grammar of the regular expression compiler is as follows:

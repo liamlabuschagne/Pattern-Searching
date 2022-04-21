@@ -1,4 +1,6 @@
-import java.util.ArrayList;
+/*
+    This part was done by Liam Labuschagne ID: 1575313
+*/
 
 class REcompile {
 
@@ -43,8 +45,10 @@ class REcompile {
         if (debugMode)
             System.out.println("Compiling: " + r);
 
+        // Start the compilation
         expression();
 
+        // Send FSM description to standard out
         showFSM();
     }
 
@@ -102,12 +106,16 @@ class REcompile {
     }
 
     private static int expression() {
+        // We can't start an expression with )
         if (i < r.length() && r.charAt(i) == ')')
             error();
+
         int start = alternation();
+
         if (i == 0)
             start = 0;
 
+        // Optionally concatenate another expression
         if (i < r.length() && (isFactor() || r.charAt(i) == '(' || r.charAt(i) == '\\'))
             expression();
 
@@ -153,10 +161,12 @@ class REcompile {
         // Optionally concatenates another concatenation
         if (i < r.length() && (isFactor() || r.charAt(i) == '(' || r.charAt(i) == '\\'))
             concatenation();
+        // The only cases where we wouldn't concatenate are: eos or alternation
         else if (i < r.length() && r.charAt(i) != ')' && r.charAt(i) != '|')
             error();
-        else if ((i + 1) == r.length() && r.charAt(i) == '|')
+        else if ((i + 1) == r.length() && r.charAt(i) == '|') // Check we aren't ending on |
             error();
+        // Check we aren't ending on ) when not in a nested expression
         else if (i < r.length() && !inNestedExpression && r.charAt(i) == ')')
             error();
 
@@ -238,7 +248,7 @@ class REcompile {
                 error(); // Empty expression
             start = expression();
             if (i >= r.length() || r.charAt(i) != ')')
-                error();
+                error(); // Didn't close parenthesis
             inNestedExpression = false;
             i++;
         }
@@ -260,8 +270,8 @@ class REcompile {
             i++;
         } else if (isLiteral()) {
             start = factor();
-        } else if (r.charAt(i) != '(') {
-            error();
+        } else if (r.charAt(i) != '(') { // the only other possibility is that we are starting a nested expression
+            error(); // Malformed expression
         }
         return start;
     }
@@ -287,6 +297,8 @@ class REcompile {
         return start;
     }
 
+    // Some utility functions used in lookahead's
+
     private static boolean isFactor() {
         if (i >= r.length())
             error();
@@ -304,6 +316,7 @@ class REcompile {
         return !nonLiterals.contains(String.valueOf(c));
     }
 
+    // Report malformed expression and terminate without finishing recursion
     private static void error() {
         error("");
     }
@@ -321,12 +334,14 @@ class REcompile {
         System.exit(0);
     }
 
+    // Utility function to update all three arrays simultaneously
     private static void setState(int st, char c, int ne1, int ne2) {
         ch[st] = c;
         n1[st] = ne1;
         n2[st] = ne2;
     }
 
+    // Output FSM description to standard out
     private static void showFSM() {
         if (debugMode)
             showFSMdebug();
@@ -336,6 +351,7 @@ class REcompile {
             }
     }
 
+    // Nice debugging display format
     private static void showFSMdebug() {
         System.out.println(" -----------");
         System.out.println("|s#|ch|n1|n2|");
